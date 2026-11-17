@@ -32,3 +32,30 @@ Power BI for business intelligence reporting.
 The Medallion Architecture separates raw data
 access, data quality processing and business
 analytics into Bronze, Silver and Gold layers.
+
+
+## Physical Parquet Architecture
+
+```mermaid
+flowchart TD
+    A["ADLS Gen2 Bronze<br/>Raw CSV: 302 orders"]
+    B["Azure Data Factory<br/>CSV to Parquet"]
+    C["Silver Raw Parquet<br/>302 orders"]
+    D["Synapse Serverless SQL<br/>Existing SQL Views"]
+    E["CETAS: Silver Clean Parquet<br/>205 orders"]
+    F["CETAS: Silver Rejected Parquet<br/>95 orders"]
+    G["CETAS: Gold Sales Parquet<br/>29 reporting-ready orders"]
+    H["Power BI<br/>Existing SQL Reporting Layer"]
+
+    A --> B --> C
+    A --> D
+    D --> E
+    D --> F
+    D --> G
+    D --> H
+```
+
+**Note:** The CETAS exports currently read from existing
+SQL views. The materialised Silver Parquet files are not
+yet the direct input to the Gold transformation.
+
