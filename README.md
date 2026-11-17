@@ -57,3 +57,98 @@ The solution demonstrates practical data engineering techniques, including SQL-b
 - Interactive ONLINE and STORE sales channel filtering
 
 The project demonstrates the ability to build a cloud-based analytical solution that converts raw operational data into validated, decision-ready business information.
+
+
+## Solution Architecture
+
+RetailFlow UK implements a Medallion Architecture using Azure Data Lake Storage Gen2, Azure Synapse Analytics serverless SQL and Power BI.
+
+### Data Processing Layers
+
+**1. Data Sources and Storage**
+
+The solution uses three retail datasets:
+
+- Customers
+- Products
+- Orders
+
+Source data is stored in Azure Data Lake Storage Gen2.
+
+**2. Bronze Layer — Raw Data**
+
+Azure Synapse serverless SQL provides access to the source datasets through reusable SQL views:
+
+- `bronze.vw_customers_raw`
+- `bronze.vw_products_raw`
+- `bronze.vw_orders_raw`
+
+The Bronze layer preserves the source data for subsequent processing and validation.
+
+**3. Silver Layer — Data Cleaning and Quality**
+
+The Silver layer applies SQL-based transformations and data quality rules.
+
+Key processing activities include:
+
+- Duplicate order detection and removal.
+- Validation of essential transaction fields.
+- Identification of rejected records.
+- Customer and product integrity checks.
+- Sales channel and order status validation.
+- Classification of reporting-ready transactions.
+
+Key SQL views include:
+
+- `silver.vw_orders_clean`
+- `silver.vw_orders_business_quality`
+
+**4. Gold Layer — Business-Ready Analytics**
+
+The Gold layer exposes analytical views for sales reporting and product performance.
+
+Important reporting objects include:
+
+- `gold.vw_sales_reporting_fact`
+- `gold.dim_products`
+- `gold.vw_sales_summary`
+- `gold.vw_sales_by_channel`
+- `gold.vw_sales_by_category`
+- `gold.vw_monthly_sales`
+- `gold.vw_product_performance`
+
+The reporting fact view contains transactions classified as **Reporting Ready**, while the product dimension supplies descriptive product information.
+
+**5. Power BI — Reporting and Visualisation**
+
+Power BI Desktop connects to Azure Synapse serverless SQL using Import mode.
+
+The semantic model uses a one-to-many relationship between the Product Dimension and Sales Reporting Fact table through `product_id`.
+
+DAX measures calculate revenue, completed orders, units sold and average order value.
+
+Two interactive dashboard pages provide insights into sales trends, sales channels, product categories and product performance.
+
+### Architecture Flow
+
+```text
+Retail Source Data
+        |
+        v
+Azure Data Lake Storage Gen2
+        |
+        v
+BRONZE — Raw SQL Views
+        |
+        v
+SILVER — Cleaning and Validation
+        |
+        v
+GOLD — Reporting Fact and Dimensions
+        |
+        v
+Power BI Semantic Model
+        |
+        v
+Interactive Business Dashboards
+```
