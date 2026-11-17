@@ -93,3 +93,52 @@ Gold (Business Analytics)
     |
     v
 Power BI Dashboards
+
+
+
+## Physical Parquet Materialisation Using CETAS
+
+RetailFlow UK extends its SQL-based Medallion Architecture with physical Parquet datasets stored in Azure Data Lake Storage Gen2.
+
+### Implementation
+
+- **Bronze:** Raw CSV files retained for traceability and reprocessing.
+- **Silver:** Azure Data Factory converts raw order CSV data into Snappy-compressed Parquet. Azure Synapse Serverless SQL uses CETAS (CREATE EXTERNAL TABLE AS SELECT) to materialise core-valid and rejected order datasets.
+- **Gold:** CETAS materialises the reporting-ready sales fact dataset from the existing Gold SQL view.
+
+### Validated Outputs
+
+| Dataset | Record Count |
+|---|---:|
+| Original Bronze orders | 302 |
+| Unique orders | 300 |
+| Core-valid Silver orders | 205 |
+| Rejected Silver orders | 95 |
+| Gold reporting-ready orders | 29 |
+
+### Gold Layer Validation
+
+- Total reporting revenue: **£7,865.75**
+- Reporting-ready orders: **29**
+- Total units sold: **68**
+
+The Gold Parquet dataset was validated against the existing SQL reporting view, with matching results.
+
+### Storage Locations
+
+- `silver/order/orders.parquet` — Raw orders converted to Parquet
+- `silver/orders_clean/` — Core-valid orders
+- `silver/orders_rejected/` — Rejected orders
+- `gold/sales_reporting_fact/` — Reporting-ready sales facts
+
+### Technical Components
+
+- Azure Data Factory Copy Data activity
+- Azure Data Lake Storage Gen2
+- Azure Synapse Analytics Serverless SQL
+- External Data Sources
+- External File Formats
+- CETAS
+- Parquet with Snappy compression for the ADF conversion
+
+**Architecture note:** CETAS currently reads from the existing SQL views. The physical Parquet datasets provide materialised outputs, but the full transformation chain has not yet been changed to consume Parquet at every stage.
