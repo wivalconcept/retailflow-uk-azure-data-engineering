@@ -152,3 +152,77 @@ Power BI Semantic Model
         v
 Interactive Business Dashboards
 ```
+
+
+## Data Cleaning, Transformation and Quality Validation
+
+### Data Quality Strategy
+
+RetailFlow UK implements a multi-stage data quality process using Azure Synapse serverless SQL.
+
+The objective is to ensure that incomplete, duplicate or business-ineligible transactions do not distort sales reporting.
+
+### Stage 1 — Duplicate Detection
+
+The raw orders dataset contained **302 records**.
+
+SQL-based deduplication identified and removed **2 duplicate records**, leaving **300 unique orders** for subsequent validation.
+
+### Stage 2 — Core Data Validation
+
+The deduplicated dataset was evaluated against essential transaction quality requirements.
+
+The validation process produced:
+
+| Metric | Records |
+|---|---:|
+| Raw Orders | 302 |
+| Duplicate Records Removed | 2 |
+| Orders After Deduplication | 300 |
+| Core-Valid Orders | 205 |
+| Rejected Orders | 95 |
+
+The rejected records were excluded from downstream business reporting.
+
+### Stage 3 — Business Quality Assessment
+
+The 205 core-valid orders underwent additional business quality checks, including customer and product integrity, sales channel validity and order status.
+
+Transactions were assigned a reporting classification:
+
+| Reporting Status | Orders |
+|---|---:|
+| Reporting Ready | 29 |
+| Requires Review | 176 |
+| Total Core-Valid Orders | 205 |
+
+A transaction qualifies as Reporting Ready when it meets the required business reporting conditions, including completed order status, valid sales channel and matched customer and product records.
+
+### Stage 4 — Reporting-Ready Fact View
+
+The Gold reporting fact view includes only transactions classified as Reporting Ready.
+
+```sql
+CREATE OR ALTER VIEW gold.vw_sales_reporting_fact
+AS
+SELECT *
+FROM silver.vw_orders_business_quality
+WHERE reporting_status = 'Reporting Ready';
+```
+
+This ensures that the Power BI dashboards use transactions that satisfy the project's reporting criteria.
+
+### Validated Reporting Metrics
+
+| Business Metric | Value |
+|---|---:|
+| Reporting-Ready Orders | 29 |
+| Total Sales Revenue | £7,865.75 |
+| Total Units Sold | 68 |
+| Average Order Value | £271.23 |
+
+### Business Value
+
+This approach improves reporting reliability by separating raw transaction records from validated business data.
+
+It also provides visibility into rejected transactions and orders requiring further investigation, supporting data quality monitoring and more dependable business decisions.
