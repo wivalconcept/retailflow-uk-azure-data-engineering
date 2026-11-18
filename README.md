@@ -164,45 +164,44 @@ Potential improvements include:
 - CI/CD integration
 - Pipeline monitoring and alerting
 
-## Automated Parquet Data Quality Validation
+## Dynamic Record-Count Validation
 
-The RetailFlow UK pipeline implements automated data quality checks using Azure Data Factory, Azure Synapse Serverless SQL and Azure Data Lake Storage Gen2.
+The RetailFlow UK pipeline implements dynamic source-to-destination record-count validation using Azure Data Factory and Azure Synapse Serverless SQL.
 
-### Pipeline Features
+### Implementation
 
-- Automated conversion of Bronze CSV data into Silver Parquet format.
-- File-existence validation using the Get Metadata activity.
-- SQL-based record-count validation using OPENROWSET.
-- Conditional execution using If Condition activities.
-- Automated failure handling for missing files and record-count mismatches.
-- Microsoft Entra managed identity authentication.
-- Role-based access control (RBAC) for storage access.
+- Retrieves the number of source records from the Copy activity's `rowsRead` output.
+- Independently counts destination Parquet records using a Synapse SQL `OPENROWSET` query.
+- Dynamically compares source and destination record counts using an ADF If Condition activity.
+- Records successful validation through a pipeline variable.
+- Automatically fails the pipeline when a record-count mismatch occurs.
+- Generates dynamic error messages containing expected and actual record counts.
 
-### Validation Results
+### Validation Expression
 
-| Validation Metric | Result |
+```text
+@equals(int(activity('Lookup_Orders_Parquet_Count').output.firstRow.TotalRecords), int(activity('Copy_Bronze_Orders_To_Parquet').output.rowsRead))
+```
+
+### Test Results
+
+| Metric | Result |
 |---|---|
-| Source CSV records | 302 |
+| Source records read | 302 |
+| Records copied | 302 |
 | Destination Parquet records | 302 |
-| File-existence validation | Passed |
-| Record-count validation | Passed |
-| Successful activities | 7 |
+| Dynamic validation | Passed |
+| Successful activities | 7/7 |
 | Pipeline deployment | Published |
 
-The pipeline is designed to terminate automatically when the destination file is missing or the record count does not match the expected value.
+### Business and Technical Benefits
 
-### Security and Authentication
+- Eliminates hardcoded record-count thresholds.
+- Accommodates datasets of varying sizes.
+- Improves pipeline reliability and data integrity.
+- Simplifies troubleshooting through detailed error messages.
+- Supports reusable data ingestion patterns.
 
-- System-assigned managed identity for Azure Data Factory.
-- Microsoft Entra authentication for Synapse Serverless SQL.
-- Database read and bulk-operation permissions.
-- Storage Blob Data Reader access for the Data Factory managed identity.
+### Testing Scope
 
-### Future Enhancements
-
-- Dynamic source-to-destination record-count comparison instead of a fixed threshold.
-- Centralised pipeline audit logging.
-- Automated data quality reporting.
-- Container-level storage permissions to further restrict access.
-
-The successful pipeline execution demonstrates automated data ingestion, Parquet conversion, data integrity validation and conditional error handling within an Azure data engineering architecture.
+Successful execution has been verified against the existing dataset of 302 records. Testing alternative dataset sizes and intentional record-count mismatches remains a future enhancement.
